@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lyon Explorer - Thème Clair</title>
+  
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+.panel-button {
+  position: fixed;
+  bottom: 20px;
+  left: 160px;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background: #7c3aed;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 99999;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+@media (max-width: 768px) {
+
+  .panel-button {
+    width: 55px;
+    height: 55px;
+    left: 155px;
+    bottom: 15px;
+  }
+
+}
+.panel-handle {
+  padding: 18px;
+  font-size: 1rem;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-glow);
+  color: var(--accent-cyan);
+  user-select: none;
+}
+:root {
+      --bg-light: #f1f5f9;
+      --panel-bg: rgba(255, 255, 255, 0.95);
+      --accent-cyan: #0284c7;
+      --accent-amber: #d97706;
+      --accent-green: #059669;
+      --text-main: #1e293b;
+      --text-sub: #64748b;
+      --border-glow: rgba(2, 132, 199, 0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--panel-bg);
+      border-bottom: 2px solid var(--accent-cyan);
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .title-box h1 {
+      font-size: 1.1rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--accent-cyan);
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Style des encarts de progression */
+    .progress-container-global {
+      background: rgba(0, 0, 0, 0.03);
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-glow);
+    }
+
+    .progress-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 3px;
+      gap: 12px;
+    }
+
+    .progress-bar-bg {
+      width: 130px;
+      height: 8px;
+      background: #cbd5e1; /* Fond gris contrasté bien visible à 0% */
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid #94a3b8;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+      transition: width 0.5s ease;
+    }
+
+    main { flex: 1; position: relative; }
+    #map { width: 100%; height: 100%; background: #e2e8f0; }
+
+    .controls-overlay {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      z-index: 1000;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border: 1px solid var(--accent-cyan);
+      background: var(--panel-bg);
+      color: var(--accent-cyan);
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      backdrop-filter: blur(5px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .btn-session.active {
+      background: var(--accent-amber);
+      color: #fff;
+      border-color: #b45309;
+    }
+
+    .side-panel {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      width: 310px;
+      max-height: calc(100% - 30px);
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glow);
+      border-radius: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-glow);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .tab-btn.active {
+      color: var(--accent-cyan);
+      border-bottom: 2px solid var(--accent-cyan);
+      background: rgba(2, 132, 199, 0.05);
+    }
+
+    .tab-content {
+      padding: 14px;
+      overflow-y: auto;
+      display: none;
+      max-height: calc(100vh - 110px);
+    }
+
+    .tab-content.active { display: block; }
+
+    .panel-section-container {
+      margin-bottom: 14px;
+    }
+
+    .panel-section-title {
+      color: var(--accent-cyan);
+      font-weight: bold;
+      font-size: 0.78rem;
+      border-bottom: 1px solid var(--border-glow);
+      padding-bottom: 4px;
+      margin-top: 6px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .arr-item {
+      margin-bottom: 6px;
+      padding: 8px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.02);
+      font-size: 0.8rem;
+    }
+    .arr-item.unlocked { border-left: 3px solid var(--accent-green); }
+    .arr-item.locked { border-left: 3px solid #cbd5e1; opacity: 0.8; }
+
+    .col-item {
+      padding: 7px;
+      margin-bottom: 4px;
+      background: rgba(0,0,0,0.02);
+      border-radius: 4px;
+      font-size: 0.78rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .col-item.validated { border-right: 3px solid var(--accent-green); color: var(--accent-green); font-weight: 500; }
+    .col-item.revealed { border-right: 3px solid var(--accent-cyan); color: var(--text-main); }
+    .col-item.locked { opacity: 0.5; color: var(--text-sub); }
+
+    @keyframes playerPulseLight {
+      0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.6); }
+      70% { box-shadow: 0 0 0 14px rgba(5, 150, 105, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+    }
+
+    .player-marker-icon {
+      background: var(--accent-green);
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      animation: none;
+      pointer-events: none;
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: var(--panel-bg) !important;
+      color: var(--text-main) !important;
+      border: 1px solid var(--accent-cyan);
+      border-radius: 8px !important;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .leaflet-popup-tip { background: var(--panel-bg) !important; }
+.leaflet-popup-tip {
+  background: var(--panel-bg) !important;
+}
+
+/* Mode téléphone */
+@media (max-width: 768px) {
+
+  .side-panel {
+  width: 100%;
+  height: 60px;
+  max-height: 65vh;
+  top: auto;
+  bottom: 0;
+  right: 0;
+  border-radius: 15px 15px 0 0;
+}
+
+  .tab-content {
+    max-height: calc(40vh - 50px);
+  }
+
+  .btn {
+    font-size: 0.9rem;
+    padding: 12px 20px;
+  }
+
+
+  .header-stats {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .progress-container-global {
+    width: 100%;
+    text-align: center;
+  }
+
+  .progress-container-global {
+    flex: 1;
+    min-width: 90px;
+  }
+
+  .progress-bar-bg {
+    width: 100%;
+  }
+
+  .title-box {
+    width: 100%;
+    text-align: center;
+  }
+
+  .title-box h1 {
+    font-size: 1rem;
+  }
+
+}
+
+.gps-button {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background: #059669;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 99999;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+.gps-button.active {
+  background: #d97706;
+}
+
+@media (max-width: 768px) {
+
+  .gps-button {
+    width: 55px;
+    height: 55px;
+    font-size: 24px;
+    bottom: 15px;
+    left: 15px;
+  }
+
+}
+
+.center-button {
+  position: fixed;
+  bottom: 20px;
+  left: 90px;
+  width: 60px;
+  height: 60px;
+  border: none;
+  border-radius: 50%;
+  background: #0284c7;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 99999;
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+
+@media (max-width: 768px) {
+
+  .center-button {
+    width: 55px;
+    height: 55px;
+    font-size: 24px;
+    bottom: 15px;
+    left: 85px;
+  }
+
+}
+
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="title-box">
+      <h1>Lyon Explorer</h1>
+      <div style="font-size: 0.7rem; color: var(--text-sub);">Exploration urbaine</div>
+    </div>
+    
+    <!-- Les 3 barres globales dans l'en-tête -->
+    <div class="header-stats">
+      <!-- 1. Arrondissements -->
+      <div class="progress-container-global" style="display:none;">
+        <div class="progress-label-row">
+          <span>Arrondissements</span>
+          <span id="global-pct" style="color:var(--accent-green);">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="progress-bar" class="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- 2. Ville Globale (Total des éléments validés / Total global) -->
+      <div class="progress-container-global">
+        <div class="progress-label-row">
+<span style="
+  font-size:0.75rem;
+  color:#64748b;
+">
+Lyon explorée
+</span>
+          <span id="global-city-pct"
+	style="
+  	color:var(--accent-green);
+  	font-size:2rem;
+  	font-weight:bold;
+  	display:block;
+	">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="global-city-bar" class="progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- 3. Collections Globales -->
+<div class="progress-container-global" style="display:none;">
+        <div class="progress-label-row">
+          <span>Collections</span>
+          <span id="global-col-pct" style="color:var(--accent-green);">0%</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="global-col-bar" class="progress-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="map"></div>
+<div id="outside-lyon-warning"
+     style="
+       display:none;
+       position:absolute;
+       top:15px;
+       left:50%;
+       transform:translateX(-50%);
+       background:#dc2626;
+       color:white;
+       padding:10px 15px;
+       border-radius:10px;
+       z-index:9999;
+       font-weight:bold;
+     ">
+  Hors de Lyon Explorer
+</div>
+<div id="speed-warning"
+     style="
+       display:none;
+       position:absolute;
+       top:60px;
+       left:50%;
+       transform:translateX(-50%);
+       background:#f59e0b;
+       color:white;
+       padding:10px 15px;
+       border-radius:10px;
+       z-index:9999;
+       font-weight:bold;
+     ">
+  🚶 Marchez pour explorer
+</div>
+    <div class="controls-overlay">
+
+  <button id="btn-toggle-session" class="gps-button">
+    👟
+  </button>
+
+  <button id="btn-center-map" class="center-button">
+    📍
+  </button>
+
+  <button id="btn-toggle-panel" class="panel-button">
+    💎
+  </button>
+
+</div>
+
+    <div class="side-panel">
+      <div class="panel-handle" onclick="togglePanel()">
+  ⬆️ Collections
+</div>
+<div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'totems')">Totems</button>
+        <button class="tab-btn" onclick="switchTab(event,'collections')">Collections</button>
+      </div>
+
+      <div id="tab-totems" class="tab-content active">
+        <div class="panel-section-title"><span>Totems d'Arrondissement</span></div>
+        <div id="arr-list"></div>
+      </div>
+
+      <div id="tab-collections" class="tab-content">
+        <!-- Section Ponts -->
+        <div class="panel-section-container">
+          <div class="panel-section-title">
+            <span>Ponts & Passerelles</span>
+            <span id="cnt-ponts" style="color:var(--accent-cyan);">0/0</span>
+          </div>
+          <div class="progress-container-global" style="margin-top: 4px;">
+            <div class="progress-label-row">
+              <span>Progression Ponts</span>
+              <span id="pct-ponts" style="color:var(--accent-green);">0%</span>
+            </div>
+            <div class="progress-bar-bg" style="width: 100%;">
+              <div id="bar-ponts" class="progress-bar-fill"></div>
+            </div>
+          </div>
+          <div id="list-ponts" style="margin-top: 6px;"></div>
+        </div>
+
+        <!-- Section Places -->
+        <div class="panel-section-container">
+          <div class="panel-section-title">
+            <span>Places & Monuments</span>
+            <span id="cnt-places" style="color:var(--accent-cyan);">0/0</span>
+          </div>
+          <div class="progress-container-global" style="margin-top: 4px;">
+            <div class="progress-label-row">
+              <span>Progression Places</span>
+              <span id="pct-places" style="color:var(--accent-green);">0%</span>
+            </div>
+            <div class="progress-bar-bg" style="width: 100%;">
+              <div id="bar-places" class="progress-bar-fill"></div>
+            </div>
+          </div>
+          <div id="list-places" style="margin-top: 6px;"></div>
+        </div>
+
+        <!-- Section Musées -->
+        <div class="panel-section-container">
+          <div class="panel-section-title">
+            <span>Musées</span>
+            <span id="cnt-musees" style="color:var(--accent-cyan);">0/0</span>
+          </div>
+          <div class="progress-container-global" style="margin-top: 4px;">
+            <div class="progress-label-row">
+              <span>Progression Musées</span>
+              <span id="pct-musees" style="color:var(--accent-green);">0%</span>
+            </div>
+            <div class="progress-bar-bg" style="width: 100%;">
+              <div id="bar-musees" class="progress-bar-fill"></div>
+            </div>
+          </div>
+          <div id="list-musees" style="margin-top: 6px;"></div>
+        </div>
+
+        <!-- Section Mairies -->
+        <div class="panel-section-container">
+          <div class="panel-section-title">
+            <span>Mairies</span>
+            <span id="cnt-mairies" style="color:var(--accent-cyan);">0/0</span>
+          </div>
+          <div class="progress-container-global" style="margin-top: 4px;">
+            <div class="progress-label-row">
+              <span>Progression Mairies</span>
+              <span id="pct-mairies" style="color:var(--accent-green);">0%</span>
+            </div>
+            <div class="progress-bar-bg" style="width: 100%;">
+              <div id="bar-mairies" class="progress-bar-fill"></div>
+            </div>
+          </div>
+          <div id="list-mairies" style="margin-top: 6px;"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    const totemsData = {
+      "69381": { name: "1er Arrondissement", coords: [45.7685, 4.8335] },
+      "69382": { name: "2ème Arrondissement", coords: [45.7578, 4.8320] },
+      "69383": { name: "3ème Arrondissement", coords: [45.7610, 4.8570] },
+      "69384": { name: "4ème Arrondissement", coords: [45.7762, 4.8362] },
+      "69385": { name: "5ème Arrondissement", coords: [45.7622, 4.8226] },
+      "69386": { name: "6ème Arrondissement", coords: [45.7780, 4.8550] },
+      "69387": { name: "7ème Arrondissement", coords: [45.7460, 4.8520] },
+      "69388": { name: "8ème Arrondissement", coords: [45.7455, 4.8705] },
+      "69389": { name: "9ème Arrondissement", coords: [45.7788, 4.8042] }
+    };
+
+    const monumentsData = [
+      { id: "p1", name: "Pont Bonaparte", cat: "ponts", arr: "69385", coords: [45.7602, 4.8288] },
+      { id: "p2", name: "Passerelle du Collège", cat: "ponts", arr: "69382", coords: [45.7645, 4.8378] },
+      { id: "p3", name: "Pont de la Guillotière", cat: "ponts", arr: "69387", coords: [45.7552, 4.8385] },
+      { id: "p4", name: "Pont Schuman", cat: "ponts", arr: "69389", coords: [45.7820, 4.8280] },
+
+      { id: "pl1", name: "Place Bellecour", cat: "places", arr: "69382", coords: [45.7578, 4.8320] },
+      { id: "pl2", name: "Place des Terreaux", cat: "places", arr: "69381", coords: [45.7675, 4.8335] },
+      { id: "pl3", name: "Théâtres Romains de Fourvière", cat: "places", arr: "69385", coords: [45.7598, 4.8197] },
+      { id: "pl4", name: "Mur des Canuts", cat: "places", arr: "69384", coords: [45.7775, 4.8318] },
+
+      { id: "m1", name: "Musée des Confluences", cat: "musees", arr: "69382", coords: [45.7328, 4.8184] },
+      { id: "m2", name: "Musée des Beaux-Arts", cat: "musees", arr: "69381", coords: [45.7671, 4.8336] },
+      { id: "m3", name: "Musées Gadagne", cat: "musees", arr: "69385", coords: [45.7638, 4.8275] },
+      { id: "m4", name: "CHRD", cat: "musees", arr: "69387", coords: [45.7472, 4.8355] },
+
+      { id: "ma1", name: "Mairie du 1er", cat: "mairies", arr: "69381", coords: [45.7683, 4.8332] },
+      { id: "ma2", name: "Mairie du 2e", cat: "mairies", arr: "69382", coords: [45.7540, 4.8315] },
+      { id: "ma3", name: "Mairie du 3e", cat: "mairies", arr: "69383", coords: [45.7605, 4.8510] },
+      { id: "ma4", name: "Mairie du 4e", cat: "mairies", arr: "69384", coords: [45.7768, 4.8330] },
+      { id: "ma5", name: "Mairie du 5e", cat: "mairies", arr: "69385", coords: [45.7580, 4.8240] },
+      { id: "ma6", name: "Mairie du 6e", cat: "mairies", arr: "69386", coords: [45.7685, 4.8512] },
+      { id: "ma7", name: "Mairie du 7e", cat: "mairies", arr: "69387", coords: [45.7500, 4.8430] },
+      { id: "ma8", name: "Mairie du 8e", cat: "mairies", arr: "69388", coords: [45.7420, 4.8720] },
+      { id: "ma9", name: "Mairie du 9e", cat: "mairies", arr: "69389", coords: [45.7750, 4.8070] }
+    ];
+
+let panelOpened = false;
+
+let totemsState = {};
+let monumentsState = {};
+let totemMarkers = {};
+let monumentMarkers = {};
+
+let isInsideLyon = false;
+
+let exploredZones = [];
+let revealedZones = [];
+let explorationScore = {};
+let arrondissementLayer;
+
+let lastPosition = null;
+let lastTimestamp = null;
+
+let gpsPath = [];
+let gpsPolyline = null;
+let followPlayer = true;
+const savedExploration =
+  localStorage.getItem('lyonExplorerExploration');
+
+if (savedExploration) {
+  explorationScore = JSON.parse(savedExploration);
+}
+const savedTotems =
+  localStorage.getItem('lyonExplorerTotems');
+
+if (savedTotems) {
+  totemsState = JSON.parse(savedTotems);
+}
+
+const savedMonuments =
+  localStorage.getItem('lyonExplorerMonuments');
+
+if (savedMonuments) {
+  monumentsState = JSON.parse(savedMonuments);
+}
+
+const savedPath =
+  localStorage.getItem('lyonExplorerPath');
+
+if (savedPath) {
+  gpsPath = JSON.parse(savedPath);
+}
+
+let userCoords = [45.7600, 4.8350];
+    let playerMarker = null;
+    let isSessionActive = false;
+    let watchId = null;
+
+    const map = L.map('map', { zoomControl: false }).setView([45.764, 4.835], 12);
+const lyonBounds = L.latLngBounds(
+  [45.67, 4.72], // Sud-Ouest
+  [45.83, 4.95]  // Nord-Est
+);
+
+map.setMaxBounds(lyonBounds);
+map.on("dragstart", () => {
+  followPlayer = false;
+});
+L.rectangle(
+  [
+    [45.55, 4.55], // Sud-Ouest
+    [45.95, 5.05]  // Nord-Est
+  ],
+  {
+    color: '#000000',
+    weight: 0,
+    fillColor: '#000000',
+    fillOpacity: 0.60,
+    interactive: false
+  }
+).addTo(map);
+
+L.tileLayer(
+  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }
+).addTo(map);
+
+    monumentsData.forEach(m => {
+
+  if (!monumentsState[m.id]) {
+
+    monumentsState[m.id] = {
+      ...m,
+      validated: false
+    };
+
+  }
+
+});
+map.setMinZoom(11);
+
+    function initApp() {
+      fetch('metropole-de-lyon_adr_voie_lieu.adrarrond.json')
+        .then(response => response.json())
+        .then(geojsonData => {
+          arrondissementLayer = L.geoJSON(geojsonData, {
+            style: function(feature) {
+
+  const code = String(feature.properties.insee || feature.properties.code || '');
+
+  const discovered =
+    totemsState[code] &&
+    totemsState[code].unlocked;
+
+  if (discovered) {
+    return {
+      color: '#10b981',
+      weight: 2,
+      fillColor: '#10b981',
+      fillOpacity: 0.05
+    };
+  }
+
+  return {
+    color: '#111827',
+    weight: 2,
+    fillColor: '#111827',
+    fillOpacity: 0.97
+  };
+},
+            onEachFeature: function(feature, layer) {
+              if (feature.properties && feature.properties.nom) {
+                layer.bindPopup(`<b>Secteur :</b> ${feature.properties.nom}`);
+              }
+            }
+          });
+arrondissementLayer.addTo(map);
+
+        })
+        .catch(err => console.log("Fichiers de contours optionnels non chargés :", err));
+
+      Object.keys(totemsData).forEach(code => {
+        const config = totemsData[code];
+if (!totemsState[code]) {
+
+  totemsState[code] = {
+    code,
+    name: config.name,
+    coords: config.coords,
+    unlocked: false
+  };
+
+}
+        const totemIcon = L.divIcon({
+          className: 'totem-icon-wrap',
+          html: `<div style="background:#d97706; width:18px; height:18px; border-radius:4px; border:2px solid #fff; box-shadow:0 0 10px rgba(217,119,6,0.5); transform: rotate(45deg);"></div>`,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        });
+
+        const marker = L.marker(config.coords, { icon: totemIcon }).addTo(map);
+        marker.on('click', () => handleTotemClick(code));
+        totemMarkers[code] = marker;
+      });
+document.querySelector(".side-panel").style.height = "45px";
+if (gpsPath.length > 1) {
+
+  gpsPolyline = L.polyline(gpsPath, {
+    color: '#22c55e',
+    weight: 4,
+    opacity: 0.9,
+    lineCap: 'round',
+    lineJoin: 'round'
+  }).addTo(map);
+
+}
+
+      updateUI();
+    }
+
+    initApp();
+
+    function handleTotemClick(code) {
+      const totem = totemsState[code];
+      const dist = calculateDistance(userCoords, totem.coords);
+
+      let content = `<div style="padding:4px;">
+        <b style="color:var(--accent-cyan);">${totem.name}</b><br>`;
+
+      if (totem.unlocked) {
+        content += `<span style="color:var(--accent-green);">✓ Arrondissement découvert</span>`;
+      } else {
+        content += `<div style="font-size:0.8rem; margin:6px 0;">Distance : <b>${Math.round(dist)}m</b> (&lt; 100m)</div>`;
+        if (dist <= 100) {
+          content += `<button onclick="unlockTotem('${code}')" style="background:var(--accent-green); border:none; color:#fff; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; width:100%;">Activer le Totem</button>`;
+        } else {
+          content += `<button onclick="teleportAndUnlock('${code}')" style="background:rgba(0,0,0,0.05); border:1px solid var(--accent-cyan); color:var(--accent-cyan); padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer; width:100%;">[Demo] Se placer au Totem</button>`;
+        }
+      }
+      content += `</div>`;
+
+      L.popup().setLatLng(totem.coords).setContent(content).openOn(map);
+    }
+
+    window.teleportAndUnlock = function(code) {
+      const totem = totemsState[code];
+      updatePlayerPosition(totem.coords);
+      unlockTotem(code);
+      map.closePopup();
+    };
+
+    window.unlockTotem = function(code) {
+      if (!totemsState[code] || totemsState[code].unlocked) return;
+
+      totemsState[code].unlocked = true;
+explorationScore[code] = 0;
+      totemMarkers[code].setIcon(L.divIcon({
+        className: 'totem-icon-unlocked',
+        html: `<div style="background:#059669; width:20px; height:20px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 12px rgba(5,150,105,0.4);"></div>`,
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      }));
+
+if ((explorationScore[code] || 0) >= 30) {
+
+  monumentsData
+    .filter(m => m.arr === code)
+    .forEach(m => showMonumentOnMap(m));
+
+}      if (arrondissementLayer) {
+  arrondissementLayer.setStyle(function(feature) {
+
+    const codeFeature =
+      String(feature.properties.insee || feature.properties.code || '');
+
+    const discovered =
+      totemsState[codeFeature] &&
+      totemsState[codeFeature].unlocked;
+
+    if (discovered) {
+  return {
+    color: '#22c55e',
+    weight: 2,
+    fillColor: '#000000',
+    fillOpacity: 0.55
+  };
+}
+
+    return {
+  color: '#60a5fa',
+  weight: 3,
+  opacity: 1,
+  fillColor: '#000000',
+  fillOpacity: 0.85
+};
+  });
+}
+
+saveProgress();
+updateUI();
+};
+
+    function showMonumentOnMap(monument) {
+      if (monumentMarkers[monument.id]) return;
+
+      const monIcon = L.divIcon({
+        className: 'mon-icon',
+        html: `<div id="mon-icon-${monument.id}" style="background:${monumentsState[monument.id].validated ? '#059669' : '#0284c7'}; width:12px; height:12px; border-radius:50%; border:1px solid #fff; box-shadow:0 0 6px rgba(2,132,199,0.4);"></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+
+      const marker = L.marker(monument.coords, { icon: monIcon }).addTo(map);
+      marker.on('click', () => handleMonumentClick(monument.id));
+      monumentMarkers[monument.id] = marker;
+    }
+
+    function handleMonumentClick(id) {
+      const mon = monumentsState[id];
+      const dist = calculateDistance(userCoords, mon.coords);
+
+      let content = `<div style="padding:4px;">
+        <b style="color:var(--accent-cyan);">${mon.name}</b><br>`;
+
+      if (mon.validated) {
+        content += `<span style="color:var(--accent-green);">✓ Visite validée !</span>`;
+      } else {
+        content += `<div style="font-size:0.8rem; margin:6px 0;">Distance : <b>${Math.round(dist)}m</b> (&lt; 60m)</div>`;
+        if (dist <= 60) {
+          content += `<button onclick="validateMonument('${id}')" style="background:var(--accent-green); border:none; color:#fff; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; width:100%;">Valider le monument</button>`;
+        } else {
+          content += `<button onclick="teleportAndValidateMon('${id}')" style="background:rgba(0,0,0,0.05); border:1px solid var(--accent-cyan); color:var(--accent-cyan); padding:4px 8px; border-radius:4px; font-size:0.7rem; cursor:pointer; width:100%;">[Demo] Se placer sur le site</button>`;
+        }
+      }
+      content += `</div>`;
+
+      L.popup().setLatLng(mon.coords).setContent(content).openOn(map);
+    }
+
+    window.teleportAndValidateMon = function(id) {
+      const mon = monumentsState[id];
+      updatePlayerPosition(mon.coords);
+      validateMonument(id);
+      map.closePopup();
+    };
+
+    window.validateMonument = function(id) {
+  monumentsState[id].validated = true;
+
+  const iconEl = document.getElementById(`mon-icon-${id}`);
+
+  if (iconEl) {
+    iconEl.style.background = '#059669';
+  }
+
+  saveProgress();
+  updateUI();
+};
+
+function isPointInsideLyon(coords) {
+
+  if (!arrondissementLayer) {
+    return false;
+  }
+
+  let inside = false;
+
+  arrondissementLayer.eachLayer(function(layer) {
+
+    if (
+      layer.getBounds &&
+      layer.getBounds().contains(coords)
+    ) {
+      inside = true;
+    }
+
+  });
+
+  return inside;
+}
+
+    function updatePlayerPosition(coords) {
+let speedKmh = 0;
+
+if (lastPosition && lastTimestamp) {
+
+  const distance = calculateDistance(
+    lastPosition,
+    coords
+  );
+
+  const seconds =
+    (Date.now() - lastTimestamp) / 1000;
+
+  if (seconds > 0) {
+
+    speedKmh =
+      (distance / seconds) * 3.6;
+const speedWarning =
+  document.getElementById(
+    "speed-warning"
+  );
+
+if (speedKmh > 8) {
+
+  speedWarning.style.display =
+    "block";
+
+} else {
+
+  speedWarning.style.display =
+    "none";
+
+}
+  }
+
+}
+
+lastPosition = coords;
+lastTimestamp = Date.now();
+
+isInsideLyon = isPointInsideLyon(coords);
+
+const warning =
+  document.getElementById(
+    "outside-lyon-warning"
+  );
+
+if (!isInsideLyon) {
+
+  warning.style.display = "block";
+
+} else {
+
+  warning.style.display = "none";
+
+}
+
+gpsPath.push(coords);
+const zone = L.circle(coords, {
+  radius: 50,
+  color: '#22c55e',
+  fillColor: '#22c55e',
+  fillOpacity: 0.08,
+  weight: 0
+}).addTo(map);
+
+revealedZones.push(zone);
+if (!isInsideLyon) {
+
+  userCoords = coords;
+
+  if (!playerMarker) {
+
+    const playerIcon = L.divIcon({
+      className: 'player-icon-wrapper',
+      html: `<div class="player-marker-icon"></div>`,
+      iconSize: [8, 8],
+      iconAnchor: [4, 4]
+    });
+
+    playerMarker = L.marker(coords, {
+      icon: playerIcon,
+      zIndexOffset: 1000,
+      interactive: false
+    }).addTo(map);
+
+  } else {
+
+    playerMarker.setLatLng(coords);
+
+  }
+
+  return;
+
+}
+if (arrondissementLayer) {
+
+  arrondissementLayer.eachLayer(function(layer) {
+
+    const center = zone.getLatLng();
+
+    const arrondissementCode =
+      layer.feature?.properties?.insee ||
+      layer.feature?.properties?.code;
+
+    if (
+      layer.getBounds &&
+      layer.getBounds().contains(center) &&
+      totemsState[arrondissementCode] &&
+      totemsState[arrondissementCode].unlocked
+    ) {
+
+      layer.setStyle({
+        fillOpacity: 0.25
+      });
+
+    }
+
+  });
+
+}
+exploredZones.push(zone);
+if (gpsPath.length > 1) {
+
+  if (gpsPolyline) {
+    map.removeLayer(gpsPolyline);
+  }
+
+gpsPolyline = L.polyline(gpsPath, {
+  color: '#22c55e',
+  weight: 4,
+  opacity: 0.9,
+  lineCap: 'round',
+  lineJoin: 'round'
+}).addTo(map);
+}
+if (speedKmh > 8) {
+
+  console.log(
+    "Exploration suspendue",
+    Math.round(speedKmh),
+    "km/h"
+  );
+
+  return;
+
+}
+if (arrondissementLayer) {
+
+  arrondissementLayer.eachLayer(function(layer) {
+
+    const arrondissementCode =
+      layer.feature?.properties?.insee ||
+      layer.feature?.properties?.code;
+
+    if (
+      !arrondissementCode ||
+      !totemsState[arrondissementCode] ||
+      !totemsState[arrondissementCode].unlocked
+    ) {
+      return;
+    }
+
+    if (
+      layer.getBounds &&
+      layer.getBounds().contains(coords)
+    ) {
+
+      explorationScore[arrondissementCode] =
+        Math.min(
+          (explorationScore[arrondissementCode] || 0) + 0.2,
+          100
+        );
+
+      if (
+        (explorationScore[arrondissementCode] || 0) >= 30
+      ) {
+
+        monumentsData
+          .filter(
+            m => m.arr === arrondissementCode
+          )
+          .forEach(
+            m => showMonumentOnMap(m)
+          );
+
+      }
+
+    }
+
+  });
+
+}
+saveProgress();
+      userCoords = coords;
+      if (!playerMarker) {
+        const playerIcon = L.divIcon({
+          className: 'player-icon-wrapper',
+          html: `<div class="player-marker-icon"></div>`,
+          iconSize: [8, 8],
+          iconAnchor: [4, 4]
+        });
+
+        playerMarker = L.marker(coords, { icon: playerIcon, zIndexOffset: 1000, interactive: false }).addTo(map);
+      } else {
+        playerMarker.setLatLng(coords);
+      }
+if (followPlayer) {
+  map.panTo(coords);
+}
+
+    }
+
+    document.getElementById('btn-toggle-session').addEventListener('click', function() {
+      if (!isSessionActive) {
+gpsPath = [];
+        if (!navigator.geolocation) return alert("GPS non supporté");
+        isSessionActive = true;
+        this.classList.add('active');
+this.innerText = "⏸️";
+        watchId = navigator.geolocation.watchPosition(
+          p => updatePlayerPosition([p.coords.latitude, p.coords.longitude]),
+          null,
+          { enableHighAccuracy: true }
+        );
+      } else {
+        isSessionActive = false;
+        this.classList.remove('active');
+this.innerText = "👟";
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+      }
+    });
+
+document
+  .getElementById("btn-center-map")
+  .addEventListener("click", () => {
+
+    document
+  .getElementById("btn-center-map")
+  .addEventListener("click", () => {
+
+    followPlayer = true;
+
+    if (playerMarker) {
+
+      map.setView(
+        playerMarker.getLatLng(),
+        17
+      );
+
+    }
+document
+  .getElementById("btn-toggle-panel")
+  .addEventListener("click", () => {
+
+    togglePanel();
+
+  });
+
+  });
+
+    followPlayer = true;
+
+    if (playerMarker) {
+
+      map.setView(
+        playerMarker.getLatLng(),
+        17
+      );
+
+    }
+
+  });
+
+    function calculateDistance(coord1, coord2) {
+      const R = 6371000;
+      const dLat = (coord2[0] - coord1[0]) * Math.PI / 180;
+      const dLon = (coord2[1] - coord1[1]) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(coord1[0] * Math.PI / 180) * Math.cos(coord2[0] * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    window.switchTab = function(event, tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+    };
+
+function saveProgress() {
+
+  localStorage.setItem(
+    'lyonExplorerTotems',
+    JSON.stringify(totemsState)
+  );
+
+  localStorage.setItem(
+    'lyonExplorerMonuments',
+    JSON.stringify(monumentsState)
+  );
+
+  localStorage.setItem(
+    'lyonExplorerPath',
+    JSON.stringify(gpsPath)
+  );
+
+  localStorage.setItem(
+    'lyonExplorerExploration',
+    JSON.stringify(explorationScore)
+  );
+
+}
+
+function togglePanel() {
+
+  const panel =
+    document.querySelector(".side-panel");
+
+  panelOpened = !panelOpened;
+
+  if (panelOpened) {
+
+    panel.style.height = "40vh";
+    panel.style.maxHeight = "40vh";
+
+  } else {
+
+    panel.style.height = "60px";
+    panel.style.maxHeight = "60px";
+
+  }
+
+}
+
+
+
+    function updateUI() {
+      const arrListEl = document.getElementById('arr-list');
+      arrListEl.innerHTML = '';
+      let unlockedCount = 0;
+
+      Object.values(totemsState).forEach(arr => {
+        if (arr.unlocked) unlockedCount++;
+
+        const div = document.createElement('div');
+        div.className = `arr-item ${arr.unlocked ? 'unlocked' : 'locked'}`;
+        div.innerHTML = `
+  <strong>${arr.name}</strong><br>
+
+  Statut :
+  ${
+    arr.unlocked
+      ? '<span style="color:var(--accent-green)">Découvert</span>'
+      : '<span style="color:var(--text-sub)">Verrouillé</span>'
+  }
+
+  <br>
+Exploration : ${Math.round(explorationScore[arr.code] || 0)}%
+
+<br>
+
+${
+  (explorationScore[arr.code] || 0) < 30
+    ? `<span style="color:#f59e0b">
+         Encore ${Math.max(0, Math.ceil(30 - (explorationScore[arr.code] || 0)))}%
+         pour révéler les monuments
+       </span>`
+    : `<span style="color:#22c55e">
+         Monuments révélés ✓
+       </span>`
+}  <br>
+
+  <div style="
+    width:100%;
+    height:8px;
+    background:#1f2937;
+    border-radius:4px;
+    margin-top:4px;
+  ">
+    <div style="
+      width:${explorationScore[arr.code] || 0}%;
+      height:100%;
+      background:#22c55e;
+      border-radius:4px;
+    "></div>
+  </div>
+`;
+
+        arrListEl.appendChild(div);
+      });
+
+      // 1. Calcul pourcentage Arrondissements
+      const arrPct = Math.round((unlockedCount / 9) * 100);
+      document.getElementById('global-pct').innerText = `${arrPct}%`;
+      document.getElementById('progress-bar').style.width = `${arrPct}%`;
+
+      // Collections calculs par catégorie
+      let totalMonuments = monumentsData.length;
+      let totalValidatedMonuments = 0;
+      let totalCollectionsPctSum = 0;
+
+      ['ponts', 'places', 'musees', 'mairies'].forEach(cat => {
+        const catMonuments = Object.values(monumentsState).filter(m => m.cat === cat);
+        const validatedCount = catMonuments.filter(m => m.validated).length;
+        totalValidatedMonuments += validatedCount;
+        
+        document.getElementById(`cnt-${cat}`).innerText = `${validatedCount}/${catMonuments.length}`;
+        
+        const catPct = catMonuments.length > 0 ? Math.round((validatedCount / catMonuments.length) * 100) : 0;
+        totalCollectionsPctSum += catPct;
+
+        const barEl = document.getElementById(`bar-${cat}`);
+        if (barEl) barEl.style.width = `${catPct}%`;
+
+        const pctTextEl = document.getElementById(`pct-${cat}`);
+        if (pctTextEl) pctTextEl.innerText = `${catPct}%`;
+
+        const container = document.getElementById(`list-${cat}`);
+        container.innerHTML = '';
+
+        catMonuments.forEach(m => {
+          const isArrUnlocked = totemsState[m.arr] && totemsState[m.arr].unlocked;
+const exploredEnough =
+  (explorationScore[m.arr] || 0) >= 30;
+          const div = document.createElement('div');
+          
+          let stateClass = 'locked';
+let label = '??? (30% exploration requis)';
+          if (m.validated) {
+            stateClass = 'validated';
+            label = `${m.name} ✓`;
+          } else if (
+  isArrUnlocked &&
+  exploredEnough
+) {
+            stateClass = 'revealed';
+            label = `${m.name}`;
+          }
+
+          div.className = `col-item ${stateClass}`;
+          div.innerHTML = `<span>${label}</span>`;
+          container.appendChild(div);
+        });
+      });
+
+      // 2. Calcul pourcentage Ville Globale (Totems + Monuments validés par rapport au total absolu)
+      const totalExploration =
+  Object.values(explorationScore)
+    .reduce((a,b)=>a+b,0);
+
+const globalCityPct =
+  Math.round(totalExploration / 9);
+
+      document.getElementById('global-city-pct').innerText = `${globalCityPct}%`;
+      document.getElementById('global-city-bar').style.width = `${globalCityPct}%`;
+
+      // 3. Calcul pourcentage global des collections (Moyenne des % des 4 catégories)
+      const globalColPct = Math.round(totalCollectionsPctSum / 4);
+      document.getElementById('global-col-pct').innerText = `${globalColPct}%`;
+      document.getElementById('global-col-bar').style.width = `${globalColPct}%`;
+    }
+  </script>
+</body>
+</html>
