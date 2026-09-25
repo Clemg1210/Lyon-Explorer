@@ -745,13 +745,13 @@ map.setMinZoom(11);
     totemsState[code].unlocked;
 
   if (discovered) {
-    return {
-      color: '#10b981',
-      weight: 2,
-      fillColor: '#10b981',
-      fillOpacity: 0.05
-    };
-  }
+  return {
+    color: '#3b82f6',
+    weight: 3,
+    fillColor: '#3b82f6',
+    fillOpacity: 0.12
+  };
+}
 
   return {
     color: '#111827',
@@ -806,7 +806,14 @@ if (gpsPath.length > 1) {
   }).addTo(map);
 
 }
-
+Object.values(monumentsState).forEach(monument => {
+  if (
+    totemsState[monument.arr]?.unlocked &&
+    (explorationScore[monument.arr] || 0) >= 30
+  ) {
+    showMonumentOnMap(monument);
+  }
+});
       updateUI();
     }
 
@@ -845,6 +852,19 @@ if (gpsPath.length > 1) {
       if (!totemsState[code] || totemsState[code].unlocked) return;
 
       totemsState[code].unlocked = true;
+if (arrondissementLayer) {
+  arrondissementLayer.eachLayer(layer => {
+
+    const arrCode =
+      layer.feature?.properties?.insee ||
+      layer.feature?.properties?.code;
+
+    if (String(arrCode) === String(code)) {
+      layer.bringToFront();
+    }
+
+  });
+}
 explorationScore[code] = 0;
       totemMarkers[code].setIcon(L.divIcon({
         className: 'totem-icon-unlocked',
@@ -871,10 +891,10 @@ if ((explorationScore[code] || 0) >= 30) {
 
     if (discovered) {
   return {
-    color: '#22c55e',
+    color: '#3b82f6',
     weight: 2,
-    fillColor: '#000000',
-    fillOpacity: 0.55
+    fillColor: '#3b82f6',
+    fillOpacity: 0.15
   };
 }
 
@@ -993,7 +1013,7 @@ const speedWarning =
     "speed-warning"
   );
 
-if (speedKmh > 8) {
+if (speedKmh > 15) {
 
   speedWarning.style.display =
     "block";
@@ -1030,10 +1050,10 @@ if (!isInsideLyon) {
 
 gpsPath.push(coords);
 const zone = L.circle(coords, {
-  radius: 50,
+  radius: 30,
   color: '#22c55e',
   fillColor: '#22c55e',
-  fillOpacity: 0.08,
+  fillOpacity: 0,
   weight: 0
 }).addTo(map);
 
@@ -1101,13 +1121,13 @@ if (gpsPath.length > 1) {
 
 gpsPolyline = L.polyline(gpsPath, {
   color: '#22c55e',
-  weight: 4,
+  weight: 2,
   opacity: 0.9,
   lineCap: 'round',
   lineJoin: 'round'
 }).addTo(map);
 }
-if (speedKmh > 8) {
+if (speedKmh > 15) {
 
   console.log(
     "Exploration suspendue",
@@ -1218,7 +1238,7 @@ document
 
       map.setView(
         playerMarker.getLatLng(),
-        17
+        15
       );
 
     }
@@ -1238,7 +1258,7 @@ document
 
       map.setView(
         playerMarker.getLatLng(),
-        17
+        15
       );
 
     }
